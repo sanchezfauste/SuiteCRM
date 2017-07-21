@@ -73,7 +73,7 @@ class BeanFactory
      *
      * @return SugarBean|bool
      */
-    public static function getBean($module, $id = null, $params = array(), $deleted = true)
+    public static function getBean($module, $id = null, $params = array(), $deleted = true, $useCache = true)
     {
 
         // Check if params is an array, if not use old arguments
@@ -97,7 +97,7 @@ class BeanFactory
         }
 
         if (!empty($id)) {
-            if (empty(self::$loadedBeans[$module][$id])) {
+            if (empty(self::$loadedBeans[$module][$id]) || !$useCache) {
                 $bean = new $beanClass();
                 $result = $bean->retrieve($id, $encode, $deleted);
                 if ($result == null) {
