@@ -181,6 +181,7 @@ class AOR_Scheduled_Reports extends basic {
             return true;
         }
         $lastRun = $timedate->fromDb($this->last_run);
+        $lastRun->setTimezone(new \DateTimeZone(date_default_timezone_get()));
         $next = $cron->getNextRunDate($lastRun);
         if($next < $date){
             return true;
