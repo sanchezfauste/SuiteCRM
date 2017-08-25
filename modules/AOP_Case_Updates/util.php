@@ -130,7 +130,7 @@ function aop_parse_template($string, $bean_arr)
 
     foreach ($bean_arr as $bean_name => $bean_id) {
 
-        $focus = BeanFactory::getBean($bean_name, $bean_id);
+        $focus = BeanFactory::getBean($bean_name, $bean_id, array(), true, false);
 
         if ($bean_name === 'Leads' || $bean_name === 'Prospects') {
             $bean_name = 'Contacts';
