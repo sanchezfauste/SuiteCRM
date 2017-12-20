@@ -14,9 +14,9 @@
  *
  * @category   Zend
  * @package    Zend_Oauth
- * @copyright  Copyright (c) 2005-2010 Zend Technologies USA Inc. (http://www.zend.com)
+ * @copyright  Copyright (c) 2005-2015 Zend Technologies USA Inc. (http://www.zend.com)
  * @license    http://framework.zend.com/license/new-bsd     New BSD License
-
+ * @version    $Id$
  */
 
 /** Zend_Oauth */
@@ -43,7 +43,7 @@ require_once 'Zend/Oauth/Config.php';
 /**
  * @category   Zend
  * @package    Zend_Oauth
- * @copyright  Copyright (c) 2005-2010 Zend Technologies USA Inc. (http://www.zend.com)
+ * @copyright  Copyright (c) 2005-2015 Zend Technologies USA Inc. (http://www.zend.com)
  * @license    http://framework.zend.com/license/new-bsd     New BSD License
  */
 class Zend_Oauth_Consumer extends Zend_Oauth
@@ -152,14 +152,20 @@ class Zend_Oauth_Consumer extends Zend_Oauth
      * Sends headers and exit()s on completion.
      *
      * @param  null|array $customServiceParameters
+     * @param  null|Zend_Oauth_Token_Request $token
      * @param  null|Zend_Oauth_Http_UserAuthorization $request
      * @return void
      */
     public function redirect(
         array $customServiceParameters = null,
+        Zend_Oauth_Token_Request $token = null,
         Zend_Oauth_Http_UserAuthorization $request = null
     ) {
-        $redirectUrl = $this->getRedirectUrl($customServiceParameters, $request);
+        if ($token instanceof Zend_Oauth_Http_UserAuthorization) {
+            $request = $token;
+            $token = null;
+        }
+        $redirectUrl = $this->getRedirectUrl($customServiceParameters, $token, $request);
         header('Location: ' . $redirectUrl);
         exit(1);
     }
@@ -192,7 +198,7 @@ class Zend_Oauth_Consumer extends Zend_Oauth
         }
 
         // OAuth 1.0a Verifier
-        if (!is_null($authorizedToken->getParam('oauth_verifier'))) {
+        if ($authorizedToken->getParam('oauth_verifier') !== null) {
             $params = array_merge($request->getParameters(), array(
                 'oauth_verifier' => $authorizedToken->getParam('oauth_verifier')
             ));
