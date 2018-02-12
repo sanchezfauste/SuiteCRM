@@ -127,7 +127,8 @@ class AOW_WorkFlow extends Basic
     }
 
     function save($check_notify = FALSE){
-        if (empty($this->id)){
+        if (empty($this->id) || (isset($_POST['duplicateSave'])
+                && $_POST['duplicateSave'] == true)) {
             unset($_POST['aow_conditions_id']);
             unset($_POST['aow_actions_id']);
         }

@@ -52,7 +52,9 @@ class AOS_Invoices extends AOS_Invoices_sugar {
     function save($check_notify = FALSE){
         global $sugar_config;
 
-        if (empty($this->id)  || $this->new_with_id){
+        if (empty($this->id) || $this->new_with_id
+                || (isset($_POST['duplicateSave'])
+                && $_POST['duplicateSave'] == true)) {
             if(isset($_POST['group_id'])) unset($_POST['group_id']);
             if(isset($_POST['product_id'])) unset($_POST['product_id']);
             if(isset($_POST['service_id'])) unset($_POST['service_id']);
