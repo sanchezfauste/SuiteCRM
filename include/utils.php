@@ -1805,7 +1805,7 @@ function parse_calendardate($local_format)
     return str_replace(array('y', 'ￄ1�7', 'a', 'j'), array('Y', 'Y', 'Y', 'd'), $calendar_format);
 }
 
-function translate($string, $mod = '', $selectedValue = '')
+function translate($string, $mod = '', $selectedValue = '', $lang = '')
 {
     //$test_start = microtime();
     //static $mod_strings_results = array();
@@ -1815,7 +1815,11 @@ function translate($string, $mod = '', $selectedValue = '')
         if (isset($_REQUEST['login_language'])) {
             $current_language = ($_REQUEST['login_language'] == $current_language) ? $current_language : $_REQUEST['login_language'];
         }
-        $mod_strings = return_module_language($current_language, $mod);
+        if ($lang == '') {
+            $mod_strings = return_module_language($current_language, $mod);
+        } else {
+            $mod_strings = return_module_language($lang, $mod);
+        }
         if ($mod == '') {
             echo 'Language is <pre>'.$mod_strings.'</pre>';
         }

@@ -49,7 +49,7 @@ if(!defined('sugarEntry') || !sugarEntry) die('Not A Valid Entry Point');
  *                              'required' -- Is the field required?
  *                              'options' -- Possible values for a drop down field
  */
-function get_field_list($value, $translate=true){
+function get_field_list($value, $translate=true, $lang = ''){
 	$list = array();
 
 	if(!empty($value->field_defs)){
@@ -79,7 +79,7 @@ function get_field_list($value, $translate=true){
             $entry['name'] = $var['name'];
             $entry['type'] = $var['type'];
             if($translate) {
-            $entry['label'] = isset($var['vname']) ? translate($var['vname'], $value->module_dir) : $var['name'];
+                $entry['label'] = isset($var['vname']) ? translate($var['vname'], $value->module_dir, '', $lang) : $var['name'];
             } else {
             $entry['label'] = isset($var['vname']) ? $var['vname'] : $var['name'];
             }
@@ -124,7 +124,7 @@ function get_field_list($value, $translate=true){
             $entry['name'] = $var['name'];
             $entry['type'] = $var['type'];
             if($translate) {
-            $entry['label'] = isset($var['vname']) ? translate($var['vname'], $value->module_dir) : $var['name'];
+                $entry['label'] = isset($var['vname']) ? translate($var['vname'], $value->module_dir, '', $lang) : $var['name'];
             } else {
             $entry['label'] = isset($var['vname']) ? $var['vname'] : $var['name'];
             }
@@ -153,7 +153,7 @@ function get_field_list($value, $translate=true){
 	return $list;
 }
 
-function new_get_field_list($value, $translate=true) {
+function new_get_field_list($value, $translate=true, $lang = '') {
 	$module_fields = array();
 	$link_fields = array();
 
@@ -173,7 +173,7 @@ function new_get_field_list($value, $translate=true) {
 				$required = 1;
 			}
 			if(isset($var['options'])){
-				$options_dom = translate($var['options'], $value->module_dir);
+				$options_dom = translate($var['options'], $value->module_dir, '', $lang);
 				if(!is_array($options_dom)) $options_dom = array();
 				foreach($options_dom as $key=>$oneOption)
 					$options_ret[] = get_name_value($key,$oneOption);
@@ -193,7 +193,7 @@ function new_get_field_list($value, $translate=true) {
 				$link_fields[$var['name']] = $entry;
             } else {
 	            if($translate) {
-	            	$entry['label'] = isset($var['vname']) ? translate($var['vname'], $value->module_dir) : $var['name'];
+                    $entry['label'] = isset($var['vname']) ? translate($var['vname'], $value->module_dir, '', $lang) : $var['name'];
 	            } else {
 	            	$entry['label'] = isset($var['vname']) ? $var['vname'] : $var['name'];
 	            }
@@ -807,21 +807,21 @@ function get_name_value_xml($val, $module_name){
 			return $xml;
 }
 
-function new_get_return_module_fields($value, $module, $translate=true){
+function new_get_return_module_fields($value, $module, $translate=true, $lang = ''){
 	global $module_name;
 	$module_name = $module;
-	$result = new_get_field_list($value, $translate);
+	$result = new_get_field_list($value, $translate, $lang);
 	return Array('module_name'=>$module,
 				'module_fields'=> $result['module_fields'],
 				'link_fields'=> $result['link_fields'],
 				);
 }
 
-function get_return_module_fields($value, $module, $error, $translate=true){
+function get_return_module_fields($value, $module, $error, $translate=true, $lang = ''){
 	global $module_name;
 	$module_name = $module;
 	return Array('module_name'=>$module,
-				'module_fields'=> get_field_list($value, $translate),
+				'module_fields'=> get_field_list($value, $translate, $lang),
 				'error'=>get_name_value_list($value)
 				);
 }

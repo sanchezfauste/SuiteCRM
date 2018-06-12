@@ -41,12 +41,12 @@ require_once('service/v3/SugarWebServiceUtilv3.php');
 class SugarWebServiceUtilv3_1 extends SugarWebServiceUtilv3
 {
 
-    function get_return_module_fields($value, $module,$fields, $translate=true)
+    function get_return_module_fields($value, $module,$fields, $translate=true, $lang = '')
     {
 		$GLOBALS['log']->info('Begin: SoapHelperWebServices->get_return_module_fields');
 		global $module_name;
 		$module_name = $module;
-		$result = $this->get_field_list($value,$fields,  $translate);
+		$result = $this->get_field_list($value,$fields,  $translate, $lang);
 		$GLOBALS['log']->info('End: SoapHelperWebServices->get_return_module_fields');
 
 		$tableName = $value->getTableName();
@@ -205,7 +205,7 @@ class SugarWebServiceUtilv3_1 extends SugarWebServiceUtilv3
         return $results;
     }
 
-    function get_field_list($value,$fields,  $translate=true) {
+    function get_field_list($value,$fields,  $translate=true, $lang) {
 
 	    $GLOBALS['log']->info('Begin: SoapHelperWebServices->get_field_list');
 		$module_fields = array();
@@ -231,7 +231,7 @@ class SugarWebServiceUtilv3_1 extends SugarWebServiceUtilv3
 				    $var['options'] = 'checkbox_dom';
 
 				if(isset($var['options'])){
-					$options_dom = translate($var['options'], $value->module_dir);
+					$options_dom = translate($var['options'], $value->module_dir, '', $lang);
 					if(!is_array($options_dom)) $options_dom = array();
 					foreach($options_dom as $key=>$oneOption)
 						$options_ret[$key] = $this->get_name_value($key,$oneOption);
@@ -254,7 +254,7 @@ class SugarWebServiceUtilv3_1 extends SugarWebServiceUtilv3
 					$link_fields[$var['name']] = $entry;
 	            } else {
 		            if($translate) {
-		            	$entry['label'] = isset($var['vname']) ? translate($var['vname'], $value->module_dir) : $var['name'];
+                        $entry['label'] = isset($var['vname']) ? translate($var['vname'], $value->module_dir, '', $lang) : $var['name'];
 		            } else {
 		            	$entry['label'] = isset($var['vname']) ? $var['vname'] : $var['name'];
 		            }

@@ -681,11 +681,12 @@ function get_user_id($session){
  * @param String $session -- Session ID returned by a previous call to login.
  * @param String $module_name -- The name of the module to return records from.  This name should be the name the module was developed under (changing a tab name is studio does not affect the name that should be passed into this method)..
  * @param Array $fields -- Optional, if passed then retrieve vardef information on these fields only.
+ * @param String $lang -- Optional, if passed then retrieve labels in the given language.
  * @return Array    'module_fields' -- Array - The vardef information on the selected fields.
  *                  'link_fields' -- Array - The vardef information on the link fields
  * @exception 'SoapFault' -- The SOAP error, if any
  */
-function get_module_fields($session, $module_name, $fields = array()){
+function get_module_fields($session, $module_name, $fields = array(), $lang = ''){
 	$GLOBALS['log']->info('Begin: SugarWebServiceImpl->get_module_fields for ' . $module_name);
 	global  $beanList, $beanFiles;
 	$error = new SoapError();
@@ -700,7 +701,7 @@ function get_module_fields($session, $module_name, $fields = array()){
 	require_once($beanFiles[$class_name]);
 	$seed = new $class_name();
 	if($seed->ACLAccess('ListView', true) || $seed->ACLAccess('DetailView', true) || 	$seed->ACLAccess('EditView', true) ) {
-    	$return = self::$helperObject->get_return_module_fields($seed, $module_name, $fields);
+        $return = self::$helperObject->get_return_module_fields($seed, $module_name, $fields, true, $lang);
         $GLOBALS['log']->info('End: SugarWebServiceImpl->get_module_fields SUCCESS for ' . $module_name);
         return $return;
     }
