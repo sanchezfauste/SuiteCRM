@@ -5,7 +5,7 @@
  * SugarCRM, Inc. Copyright (C) 2004-2013 SugarCRM Inc.
  *
  * SuiteCRM is an extension to SugarCRM Community Edition developed by SalesAgility Ltd.
- * Copyright (C) 2011 - 2017 SalesAgility Ltd.
+ * Copyright (C) 2011 - 2019 SalesAgility Ltd.
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Affero General Public License version 3 as published by the
@@ -477,13 +477,22 @@ class User extends Person {
 	    return "1<>1";
 	}
 
-	function save($check_notify = false) {
-		$isUpdate = !empty($this->id) && !$this->new_with_id;
-
-
-		$query = "SELECT count(id) as total from users WHERE ".self::getLicensedUsersWhere();
-
-
+    /**
+     * Normally a bean returns ID from save() method if it was
+     * success and false (or maybe null) is something went wrong.
+     * BUT (for some reason) if User bean saved properly except
+     * the email addresses of it, this User::save() method also
+     * return a false.
+     * It's a confusing ambiguous return value for caller method.
+     *
+     * To handle this issue when save method can not save email
+     * addresses and return false it also set the variable called
+     * User::$lastSaveErrorIsEmailAddressSaveError to true.
+     *
+     * @param bool $check_notify
+     * @return string
+     */
+	public function save($check_notify = false) {
         // is_group & portal should be set to 0 by default
         if (!isset($this->is_group)) {
             $this->is_group = 0;
@@ -505,6 +514,11 @@ class User extends Person {
 		// set some default preferences when creating a new user
 		$setNewUserPreferences = empty($this->id) || !empty($this->new_with_id);
 
+        if (!$this->verify_data()) {
+            SugarApplication::appendErrorMessage($this->error_string);
+            header('Location: index.php?action=Error&module=Users');
+            exit;
+        }
 
 		parent::save($check_notify);
 
@@ -517,6 +531,24 @@ class User extends Person {
 		}
         $this->saveFormPreferences();
         $this->savePreferencesToDB();
+
+        if ((isset($_POST['old_password']) || $this->portal_only) &&
+            (isset($_POST['new_password']) && !empty($_POST['new_password'])) &&
+            (isset($_POST['password_change']) && $_POST['password_change'] === 'true')) {
+            if (!$this->change_password($_POST['old_password'], $_POST['new_password'])) {
+                if (isset($_POST['page']) && $_POST['page'] === 'EditView') {
+                    SugarApplication::appendErrorMessage($this->error_string);
+                    header("Location: index.php?action=EditView&module=Users&record=" . $_POST['record']);
+                    exit;
+                }
+                if (isset($_POST['page']) && $_POST['page'] === 'Change') {
+                    SugarApplication::appendErrorMessage($this->error_string);
+                    header("Location: index.php?action=ChangePassword&module=Users&record=" . $_POST['record']);
+                    exit;
+                }
+            }
+        }
+
         return $this->id;
 	}
 
@@ -920,50 +952,57 @@ EOQ;
 		return $this;
 	}
 
-	/**
-	 * Generate a new hash from plaintext password
-	 * @param string $password
-	 */
-	public static function getPasswordHash($password)
-	{
-	    if(!defined('CRYPT_MD5') || !constant('CRYPT_MD5')) {
-	        // does not support MD5 crypt - leave as is
-	        if(defined('CRYPT_EXT_DES') && constant('CRYPT_EXT_DES')) {
-	            return crypt(strtolower(md5($password)),
-	            	"_.012".substr(str_shuffle('./ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'), -4));
-	        }
-	        // plain crypt cuts password to 8 chars, which is not enough
-	        // fall back to old md5
-	        return strtolower(md5($password));
-	    }
-	    return @crypt(strtolower(md5($password)));
-	}
+    /**
+     * Generate a new hash from plaintext password
+     * @param string $password
+     * @return bool|string
+     */
+    public static function getPasswordHash($password)
+    {
+        return self::getPasswordHashMD5(md5($password));
+    }
 
-	/**
-	 * Check that password matches existing hash
-	 * @param string $password Plaintext password
-	 * @param string $user_hash DB hash
-	 */
-	public static function checkPassword($password, $user_hash)
-	{
-	    return self::checkPasswordMD5(md5($password), $user_hash);
-	}
+    /**
+     * Generate a new hash from MD5 password
+     * @param string $passwordMd5
+     * @return bool|string
+     */
+    public static function getPasswordHashMD5($passwordMd5)
+    {
+        return password_hash(strtolower($passwordMd5), PASSWORD_DEFAULT);
+    }
 
-	/**
-	 * Check that md5-encoded password matches existing hash
-	 * @param string $password MD5-encoded password
-	 * @param string $user_hash DB hash
-	 * @return bool Match or not?
-	 */
-	public static function checkPasswordMD5($password_md5, $user_hash)
-	{
-	    if(empty($user_hash)) return false;
-	    if($user_hash[0] != '$' && strlen($user_hash) == 32) {
-	        // Old way - just md5 password
-	        return strtolower($password_md5) == $user_hash;
-	    }
-	    return crypt(strtolower($password_md5), $user_hash) == $user_hash;
-	}
+    /**
+     * Check that password matches existing hash
+     * @param string $userHash DB hash
+     * @return bool
+     */
+    public static function checkPassword($password, $userHash)
+    {
+        return self::checkPasswordMD5(md5($password), $userHash);
+    }
+
+    /**
+     * Check that md5-encoded password matches existing hash
+     * @param string $passwordMd5 MD5-encoded password
+     * @param string $userHash DB hash
+     * @return bool Match or not?
+     */
+    public static function checkPasswordMD5($passwordMd5, $userHash)
+    {
+        if (empty($userHash)) {
+            return false;
+        }
+
+        if ($userHash[0] !== '$' && strlen($userHash) === 32) {
+            // Legacy md5 password
+            $valid = strtolower($passwordMd5) === $userHash;
+        } else {
+            $valid = password_verify(strtolower($passwordMd5), $userHash);
+        }
+
+        return $valid;
+    }
 
 	/**
 	 * Find user with matching password
@@ -971,7 +1010,7 @@ EOQ;
 	 * @param string $password MD5-encoded password
 	 * @param string $where Limiting query
 	 * @param bool $checkPasswordMD5 use md5 check for user_hash before return the user data (default is true)
-	 * @return the matching User of false if not found
+     * @return bool|array the matching User of false if not found
 	 */
 	public static function findUserPassword($name, $password, $where = '', $checkPasswordMD5 = true)
 	{

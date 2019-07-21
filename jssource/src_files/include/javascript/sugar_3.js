@@ -759,6 +759,9 @@ function add_error_style(formname, input, txt, flash) {
     flash = true;
   try {
     inputHandle = typeof input == "object" ? input : document.forms[formname][input];
+    if (inputHandle.length > 1) {
+      inputHandle = inputHandle[inputHandle.length - 1].parentNode;
+    }
     style = get_current_bgcolor(inputHandle);
 
     // strip off the colon at the end of the warning strings
@@ -784,10 +787,13 @@ function add_error_style(formname, input, txt, flash) {
       errorTextNode = document.createElement('div');
       errorTextNode.className = 'required validation-message';
       errorTextNode.innerHTML = txt;
-      if (inputHandle.parentNode.className.indexOf('x-form-field-wrap') != -1) {
+      if (inputHandle.parentNode.className.indexOf('x-form-field-wrap') !== -1) {
+        inputHandle.parentNode.parentNode.appendChild(errorTextNode);
+      } else if (inputHandle.type === 'radio') {
         inputHandle.parentNode.parentNode.appendChild(errorTextNode);
       }
-      else {
+      else
+      {
         inputHandle.parentNode.appendChild(errorTextNode);
       }
       if (flash)
@@ -1996,9 +2002,9 @@ sugarListView.prototype.confirm_action = function (del) {
 
 }
 sugarListView.get_num_selected = function () {
-  var selectCount = $("input[name='selectCount[]']:first");
-  if (selectCount.length > 0)
-    return parseInt(selectCount.val().replace("+", ""));
+  var selectCount = sugarListView.get_checks_count();
+  if (selectCount > 0)
+        return selectCount;
   return 0;
 
 }

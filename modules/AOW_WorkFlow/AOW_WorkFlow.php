@@ -263,26 +263,79 @@ class AOW_WorkFlow extends Basic
         return null;
     }
 
-    function build_flow_custom_query_join($name, $custom_name, SugarBean $module,
-            $query = array()) {
-        if(!isset($query['join'][$custom_name])) {
-            $query['join'][$custom_name] = 'LEFT JOIN '.$module->get_custom_table_name()
-                    .' '.$custom_name.' ON '.$name.'.id = '. $custom_name.'.id_c ';
+
+    /**
+     * @deprecated since v7.8.21; use build_flow_custom_query_join or build_flow_relationship_query_join
+     * @param $name
+     * @param SugarBean $module
+     * @param $type
+     * @param array $query
+     * @return array
+     */
+    function build_flow_query_join($name, SugarBean $module, $type, $query = array())
+    {
+        if (!isset($query['join'][$name])) {
+            switch ($type) {
+                case 'custom':
+                    $query['join'][$name] = 'LEFT JOIN ' . $module->get_custom_table_name() . ' ' . $name . ' ON ' . $module->table_name . '.id = ' . $name . '.id_c ';
+                    break;
+                case 'relationship':
+                    if ($module->load_relationship($name)) {
+                        $params['join_type'] = 'LEFT JOIN';
+                        $params['join_table_alias'] = $name;
+                        $join = $module->$name->getJoin($params, true);
+
+                        $query['join'][$name] = $join['join'];
+                        $query['select'][] = $join['select'] . " AS '" . $name . "_id'";
+                    }
+                    break;
+                default:
+                    break;
+            }
         }
+
         return $query;
     }
 
-    function build_flow_relationship_query_join($name, SugarBean $module,
-            $query = array()) {
-        if(!isset($query['join'][$name])) {
-            if($module->load_relationship($name)) {
+    /**
+     * @param $name
+     * @param $custom_name
+     * @param SugarBean $module
+     * @param array $query
+     * @return array
+     */
+    function build_flow_custom_query_join(
+        $name,
+        $custom_name,
+        SugarBean $module,
+        $query = array()
+    ) {
+        if (!isset($query['join'][$custom_name])) {
+            $query['join'][$custom_name] = 'LEFT JOIN ' . $module->get_custom_table_name()
+                . ' ' . $custom_name . ' ON ' . $name . '.id = ' . $custom_name . '.id_c ';
+        }
+
+        return $query;
+    }
+
+    /**
+     * @param $name
+     * @param SugarBean $module
+     * @param array $query
+     * @return array
+     */
+    function build_flow_relationship_query_join(
+        $name,
+        SugarBean $module,
+        $query = []
+    ) {
+        if (!isset($query['join'][$name]) && $module->load_relationship($name)) {
                 $params['join_type'] = 'LEFT JOIN';
                 $params['join_table_alias'] = $name;
                 $join = $module->$name->getJoin($params, true);
 
                 $query['join'][$name] = $join['join'];
-                $query['select'][] = $join['select']." AS '".$name."_id'";
-            }
+                $query['select'][] = $join['select'] . " AS '" . $name . "_id'";
         }
         return $query;
     }
@@ -658,7 +711,15 @@ class AOW_WorkFlow extends Basic
                         break;
 
                     case 'Any_Change':
-                        $value = $condition_bean->fetched_row[$condition->field];
+                        if ($data['type'] === 'relate' && isset($data['name'])
+                            && isset($condition_bean->rel_fields_before_value[$condition->field])) {
+                            $value = $condition_bean->rel_fields_before_value[$condition->field];
+                        } else {
+                            $value = from_html($condition_bean->fetched_row[$condition->field]);
+                            // Bug - on delete bean action CRM load bean in a different way and bean can contain html characters
+                            $field = from_html($field);
+                        }
+
                         if(in_array($data['type'],$dateFields)) {
                             $value = strtotime($value);
                         }
